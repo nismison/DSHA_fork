@@ -119,6 +119,23 @@ public final class RootShell {
     return runPrivileged(ctx, command, -1, "virtual-screen-start");
   }
 
+  /**
+   * 原生受管静默安装：唯一允许 {@code pm install} 的通道。
+   *
+   * <p>通用设备命令（{@link #exec}）仍然拒绝 pm 安装，所以安装能力不是"放开白名单"，
+   * 而是把一条固定形状的命令（{@code pm install -r '<apk>'}）交给特权子进程再核验一次。
+   */
+  public static String install(Context ctx, String apkPath) {
+    if (!enabled(ctx))
+      return com.deepseekharness.app.util.UiText.text(
+          "[POLICY_BLOCKED] 未允许 root shell；到 设置 → 设备能力授权 启用 Root 后重试\n[EXIT=126]");
+    String command = "pm install -r " + ShellQuote.arg(apkPath);
+    if (!DeviceShellPolicy.inspectInstall(command).allowed())
+      return com.deepseekharness.app.util.UiText.text(
+          "[POLICY_BLOCKED] 安装命令无法核验\n[EXIT=126]");
+    return runPrivileged(ctx, command, -1, "install-apk");
+  }
+
   private static String runPrivileged(
       Context ctx, String command, int authorizedSmsUser, String operation) {
     String su = executable();

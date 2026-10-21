@@ -39,6 +39,35 @@ public final class AppDeviceActions {
     }
   }
 
+  /**
+   * /app/install?path=/sdcard/Download/DSHA/x.apk ：用已授权的 root 通道静默安装 APK。
+   *
+   * <p>不弹系统安装器：{@code pm install} 由特权 uid 执行，成功后应用立即可用。
+   * 因此 root 开关是硬前提（设置 → 设备能力授权 → Root）；通用设备命令仍不开放
+   * {@code pm install}，安装只走 root 通道里这条固定形状的受管调用。
+   */
+  public static String install(Context ctx, String path) {
+    try {
+      if (path.isEmpty()) return "NO_PATH";
+      if (!com.deepseekharness.app.util.BridgePathPolicy.isAbsolute(path))
+        return com.deepseekharness.app.util.UiText.text(
+            "FORBIDDEN: 安装需要绝对路径（可先下载到 Download/DSHA）");
+      if (!path.toLowerCase(java.util.Locale.ROOT).endsWith(".apk"))
+        return com.deepseekharness.app.util.UiText.text("BAD_APK: 只接受 .apk 文件");
+      String canonical;
+      try {
+        canonical = new java.io.File(path).getCanonicalPath();
+      } catch (Throwable unreadable) {
+        return com.deepseekharness.app.util.UiText.format("FORBIDDEN: 路径无法解析（%s）", path);
+      }
+      if (com.deepseekharness.app.util.BridgePathPolicy.denied(canonical))
+        return "FORBIDDEN: " + com.deepseekharness.app.util.BridgePathPolicy.reason();
+      return com.deepseekharness.app.RootShell.install(ctx, canonical);
+    } catch (Throwable e) {
+      return "ERROR: " + safeError(e);
+    }
+  }
+
   /** /app/clip 读剪贴板；/app/clip?text=xxx 写剪贴板 */
   public static String clipboard(Context ctx, Handler mainHandler, String text) {
     try {

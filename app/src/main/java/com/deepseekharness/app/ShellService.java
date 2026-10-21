@@ -38,6 +38,11 @@ extends IShellService.Stub {
     private com.deepseekharness.app.util.SelfPackageIdentity identity()throws java.io.IOException{
         return launchIdentity!=null?launchIdentity:com.deepseekharness.app.runtime.PrivilegedPackageContext.callerIdentity(ShellService.class,packageContext);
     }
+    /** 只供原生受管 root 子进程调用；AIDL 里没有安装方法，Shizuku/ADB 通道拿不到它。 */
+    String execInstall(String command) {
+        // 安装比普通命令慢（大包几十秒），但必须留在外层 root 通道的预算之内。
+        return DeviceShellExecutor.executeInstall(command, argv -> executeArgv(argv, 60_000));
+    }
     @Override public void destroy() {
         java.util.List<Process> owned;
         synchronized (processes) { closing = true; owned = new java.util.ArrayList<>(processes); }
@@ -56,6 +61,10 @@ extends IShellService.Stub {
     }
 
     private String executeArgv(java.util.List<String> arguments) {
+        return executeArgv(arguments, timeoutMillis);
+    }
+
+    private String executeArgv(java.util.List<String> arguments, long waitMillis) {
         Process p = null;
         try {
             java.util.List<String> argv = new java.util.ArrayList<>(arguments);
@@ -67,9 +76,9 @@ extends IShellService.Stub {
                 if (closing) return com.deepseekharness.app.util.UiText.text("[SHIZUKU_SERVICE_NOT_READY] 设备 Shell 正在退出\n[EXIT=124]");
                 p = pb.start(); processes.add(p);
             }
-            BoundedProcessRunner.Result result = BoundedProcessRunner.collect(p, timeoutMillis, 262_144, Compat::destroy);
+            BoundedProcessRunner.Result result = BoundedProcessRunner.collect(p, waitMillis, 262_144, Compat::destroy);
             String output = result.output + (result.truncated ? com.deepseekharness.app.util.UiText.text("\n[OUTPUT_TRUNCATED] 输出超过 256 KiB，已截断") : "");
-            String duration = timeoutMillis % 1000 == 0 ? timeoutMillis / 1000 + "s" : timeoutMillis + "ms";
+            String duration = waitMillis % 1000 == 0 ? waitMillis / 1000 + "s" : waitMillis + "ms";
             return output + (result.timedOut ? com.deepseekharness.app.util.UiText.text("\n命令执行超时(") + duration + com.deepseekharness.app.util.UiText.text(")，已终止本次进程\n[EXIT=timeout]")
                     : "\n[EXIT=" + result.exitCode + "]");
         }

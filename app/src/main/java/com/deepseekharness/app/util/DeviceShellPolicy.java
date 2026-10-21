@@ -18,6 +18,7 @@ public final class DeviceShellPolicy {
     STOP,
     SENSITIVE_READ,
     VIRTUAL_SCREEN,
+    INSTALL,
     DENY
   }
 
@@ -272,6 +273,41 @@ public final class DeviceShellPolicy {
         || path.indexOf('\\') >= 0
         || path.indexOf('\0') >= 0
         || path.matches(".*[\\s].*")) return false;
+    for (String part : path.split("/")) if (part.equals(".") || part.equals("..")) return false;
+    return !path.contains("//");
+  }
+
+  /**
+   * Native-only operation: {@code pm install -r '<绝对 APK 路径>'}。
+   *
+   * <p>安装永远不在通用命令白名单里（{@link #inspect} 对 {@code pm install} 一律拒绝），
+   * 只有 {@code AppDeviceActions} 经 root 通道发起的这条受管调用能拿到 {@link Kind#INSTALL}。
+   * 这里把形状钉死到一个固定 argv，任何额外参数、相对路径或非 APK 后缀都不放行。
+   */
+  public static Plan inspectInstall(String command) {
+    final List<String> args;
+    try {
+      args = split(command);
+    } catch (IllegalArgumentException error) {
+      return deny(error.getMessage());
+    }
+    if (args.size() != 4
+        || !"pm".equals(executable(args.get(0)))
+        || !args.get(1).equals("install")
+        || !args.get(2).equals("-r")
+        || !installableApkPath(args.get(3)))
+      return deny(com.deepseekharness.app.util.UiText.text("安装命令无法核验"));
+    args.set(0, "pm");
+    return plan(Kind.INSTALL, args, Collections.singletonList(args.get(3)));
+  }
+
+  /** 受管安装只接受绝对 .apk 路径；不含正/反斜杠绕过片段，也不含控制字符。 */
+  public static boolean installableApkPath(String path) {
+    if (path == null
+        || !path.startsWith("/")
+        || !path.toLowerCase(Locale.ROOT).endsWith(".apk")
+        || path.indexOf('\\') >= 0
+        || path.indexOf('\0') >= 0) return false;
     for (String part : path.split("/")) if (part.equals(".") || part.equals("..")) return false;
     return !path.contains("//");
   }

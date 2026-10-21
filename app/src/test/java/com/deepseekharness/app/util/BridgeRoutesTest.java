@@ -14,10 +14,12 @@ public final class BridgeRoutesTest {
     assertEquals(BridgeRoutes.Route.EXPORT, BridgeRoutes.match("/app/export"));
     assertEquals(BridgeRoutes.Route.SENSORS, BridgeRoutes.match("/app/sensors"));
     assertEquals(BridgeRoutes.Route.SENSOR, BridgeRoutes.match("/app/sensor"));
+    assertEquals(BridgeRoutes.Route.INSTALL, BridgeRoutes.match("/app/install"));
     for (String invalid :
         new String[] {
           "/app/readfile/secret", "/app/readfileXXX", "/app/share2", "/app/export/child",
-          "/app/sensorsXXX", "/app/sensor/child", "/app/overlay/reply", "/exec/child"
+          "/app/sensorsXXX", "/app/sensor/child", "/app/overlay/reply", "/exec/child",
+          "/app/install/child", "/app/installer"
         }) {
       assertEquals(invalid, BridgeRoutes.Route.UNKNOWN, BridgeRoutes.match(invalid));
     }

@@ -168,6 +168,7 @@ The agent calls these through the local `127.0.0.1:3090` bridge (token-gated; `/
 | Shizuku / Root channels | Backup device-command channels, bound by the same command allowlist |
 | Talking to the user | System notifications, in-app toasts, vibration (wake the user after long jobs), a three-option blocking prompt, share / open URLs |
 | File exchange | Read directories and text files, export artifacts to `Download/DSHA`; credential areas (`.dsh` / `.ssh` / `.android`) are blocked from both reads and writes |
+| Install apps | `/app/install?path=` silently installs an APK through the root channel (Root must be enabled first): no system installer prompt, the app is usable right away; generic device commands still do not allow `pm install` |
 | Sensors & location | Light / accelerometer / gyroscope / magnetometer / barometer / step counter / location / flashlight — all off by default, granted per capability |
 | Clipboard | Read and write (subject to Android foreground restrictions) |
 | Dangerous-command gatekeeper | Device commands always pass through an allowlist parser: partitioning / formatting / SELinux / system property writes are rejected outright, unknown commands never pass; blocks return `[POLICY_BLOCKED]` instead of a "allow anyway" dialog |

@@ -60,7 +60,8 @@ public class BridgeRouteProbe {
             '/app/readfile': 'READ_FILE:false', '/health': 'HEALTH:false',
             '/app/ui/dump': 'UI:false', '/app/vscreen/status': 'VSCREEN:false',
             '/app/device': 'DEVICE:false', '/app/apps': 'APPS:false',
-            '/app/launch': 'LAUNCH:false', '/app/clip': 'CLIP:false',
+            '/app/launch': 'LAUNCH:false', '/app/install': 'INSTALL:false',
+            '/app/clip': 'CLIP:false',
             '/app/share': 'SHARE:false', '/app/open': 'OPEN:false',
             '/app/vibrate': 'VIBRATE:false', '/app/ask': 'ASK:false',
             '/app/version': 'VERSION:false', '/app/help': 'HELP:false',
@@ -75,6 +76,7 @@ public class BridgeRouteProbe {
     def test_sensitive_suffixes_and_unknown_namespaces_cannot_inherit_handlers(self):
         invalid = (
             '/app/readfileXXX', '/app/readfile/child', '/app/share2',
+            '/app/install/child', '/app/installer',
             '/app/export/child', '/app/overlay/reply', '/app/sensorsXXX',
             '/app/sensor/child', '/exec/child', '/device/execute/child',
             '/app/ui', '/app/vscreen', '/app/ui%2fdump',

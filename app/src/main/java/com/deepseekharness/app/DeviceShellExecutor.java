@@ -106,6 +106,22 @@ public final class DeviceShellExecutor {
     }
   }
 
+  /**
+   * 只给原生安装端点用的特权入口；通用命令文本永远走不到这里。
+   *
+   * <p>静默安装必须由特权 uid 执行（{@code pm install} 需要 INSTALL_PACKAGES），
+   * 所以这里先核验实际身份，再把固定形状的 argv 交给执行器。
+   */
+  static String executeInstall(String command, Runner runner) {
+    int uid = android.os.Process.myUid();
+    if (uid != 0 && uid != 2000)
+      return com.deepseekharness.app.util.UiText.text(
+          "[POLICY_BLOCKED] 安装仅允许特权设备通道\n[EXIT=126]");
+    DeviceShellPolicy.Plan plan = DeviceShellPolicy.inspectInstall(command);
+    if (!plan.allowed()) return plan.reason + "\n[EXIT=126]";
+    return runner.run(plan.argv);
+  }
+
   /** Recheck SMS-provider file reads at the privileged execution boundary. */
   static void validateRootReadPaths(DeviceShellPolicy.Plan plan) throws IOException {
     boolean recursive = DeviceShellPolicy.rootReadMayDescend(plan);

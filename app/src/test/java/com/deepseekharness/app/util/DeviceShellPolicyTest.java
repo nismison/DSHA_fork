@@ -346,4 +346,53 @@ public class DeviceShellPolicyTest {
             "/mnt/expand/fixture/user/0"))
       assertTrue(root, DeviceShellPolicy.smsProviderDescendant(root));
   }
+
+  @Test
+  public void silentInstallIsItsOwnTypedEntryAndNeverAShellCommand() {
+    String apk = "/sdcard/Download/DSHA/app.apk";
+    String command = "pm install -r " + apk;
+    // 通用设备命令文本通道仍然拒绝安装：安装不是"放开白名单"。
+    assertEquals(DeviceShellPolicy.Kind.DENY, DeviceShellPolicy.inspect(command).kind);
+    DeviceShellPolicy.Plan plan = DeviceShellPolicy.inspectInstall(command);
+    assertEquals(DeviceShellPolicy.Kind.INSTALL, plan.kind);
+    assertEquals(java.util.List.of("pm", "install", "-r", apk), plan.argv);
+    assertEquals(java.util.List.of(apk), plan.operands);
+    // 带空格的受管路径经单引号传递后仍是同一个参数。
+    String spaced = "/sdcard/Download/DSHA/my app.apk";
+    assertEquals(
+        java.util.List.of("pm", "install", "-r", spaced),
+        DeviceShellPolicy.inspectInstall("pm install -r " + ShellQuote.arg(spaced)).argv);
+  }
+
+  @Test
+  public void managedInstallRejectsAnythingButTheFixedShape() {
+    for (String bad :
+        new String[] {
+          "",
+          "pm install /sdcard/Download/DSHA/app.apk",
+          "pm install -d -r /sdcard/Download/DSHA/app.apk",
+          "pm install -r --user 0 /sdcard/Download/DSHA/app.apk",
+          "pm install -r -g /sdcard/Download/DSHA/app.apk",
+          "pm install -r Download/DSHA/app.apk",
+          "pm install -r /sdcard/Download/DSHA/app.txt",
+          "pm install -r /sdcard/Download/DSHA/../app.apk",
+          "pm install -r /sdcard/Download//DSHA/app.apk",
+          "pm install -r /sdcard/Download/DSHA/app.apk extra",
+          "pm install -r; rm -rf /sdcard/Download/DSHA/app.apk",
+          "pm uninstall -r /sdcard/Download/DSHA/app.apk",
+          "/system/bin/pm install -r /sdcard/Download/DSHA/app.apk extra"
+        })
+      assertEquals(bad, DeviceShellPolicy.Kind.DENY, DeviceShellPolicy.inspectInstall(bad).kind);
+    for (String path :
+        new String[] {
+          null,
+          "",
+          "app.apk",
+          "relative/app.apk",
+          "/sdcard/Download/DSHA/app.apk/",
+          "/sdcard/Download/DSHA/app",
+          "/sdcard/Download/DSHA/../app.apk"
+        })
+      assertFalse(String.valueOf(path), DeviceShellPolicy.installableApkPath(path));
+  }
 }

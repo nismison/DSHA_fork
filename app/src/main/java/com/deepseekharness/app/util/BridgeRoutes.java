@@ -24,6 +24,7 @@ public final class BridgeRoutes {
     DEVICE(false),
     APPS(false),
     LAUNCH(false),
+    INSTALL(false),
     CLIP(false),
     SHARE(false),
     OPEN(false),
@@ -74,6 +75,7 @@ public final class BridgeRoutes {
     add(routes, "/app/device", Route.DEVICE);
     add(routes, "/app/apps", Route.APPS);
     add(routes, "/app/launch", Route.LAUNCH);
+    add(routes, "/app/install", Route.INSTALL);
     add(routes, "/app/clip", Route.CLIP);
     add(routes, "/app/share", Route.SHARE);
     add(routes, "/app/open", Route.OPEN);
